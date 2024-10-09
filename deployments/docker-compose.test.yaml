@@ -1,0 +1,72 @@
+version: '3.8'
+name: local-test
+services:
+  backend-test:
+    build:
+      context: ../
+      dockerfile: build/docker/app/Dockerfile
+      target: test
+    depends_on:
+      - db
+      - redis
+    ports:
+      - 9000:9000
+    environment:
+      - API_PORT=9000
+      - DB_HOST=${DB_HOST}
+      - DB_PORT=${DB_PORT}
+      - DB_USER=${DB_USER}
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${TEST_DB_NAME}
+      - REDIS_HOST=${REDIS_HOST}
+      - REDIS_PORT=${REDIS_PORT}
+      - REDIS_DB=${REDIS_DB}
+
+  db:
+    image: postgres:17.0-alpine
+    restart: always
+    ports:
+      - ${DB_PORT}:${DB_PORT}
+    environment:
+      - POSTGRES_USER=${DB_USER}
+      - POSTGRES_PASSWORD=${DB_PASSWORD}
+      - POSTGRES_DB=${TEST_DB_NAME}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  migrate:
+    image: migrate/migrate:v4.18.1
+    volumes:
+      - ../migrations:/migrations
+    entrypoint:
+      [
+        "migrate",
+        "-path",
+        "/migrations",
+        "-database",
+        "postgres://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${TEST_DB_NAME}?sslmode=disable",
+      ]
+    command: ["up"]
+    restart: on-failure
+    depends_on:
+      db:
+        condition: service_healthy
+
+  redis:
+    image: redis:7.4.1-alpine
+    restart: always
+    ports:
+      - ${REDIS_PORT}:${REDIS_PORT}
+    command:
+      - redis-server
+    volumes:
+      - redis_data:/data
+
+volumes:
+  db_data:
+  redis_data:

@@ -1,20 +1,20 @@
 package app
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	_ "github.com/lib/pq"
 )
 
 type QueryService struct {
-	db *sql.DB
+	db *sqlx.DB
 }
 
 func NewQueryService(config DBConfig) (*QueryService, error) {
-	connStr := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.User, config.Password, config.Name)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		config.User, config.Password, config.Host, config.Port, config.Name)
 
-	db, err := sql.Open("postgres", connStr)
+	db, err := sqlx.Open("postgres", dsn)
 	if err != nil {
 		return nil, fmt.Errorf("failed to connect to database: %v", err)
 	}

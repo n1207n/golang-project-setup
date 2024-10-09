@@ -1,8 +1,8 @@
 package app
 
 import (
-	"database/sql"
 	"fmt"
+	"github.com/jmoiron/sqlx"
 	"log"
 	"net/http"
 	"time"
@@ -25,9 +25,9 @@ type RedisConfig struct {
 }
 
 type Server struct {
-	echo          *echo.Echo
-	queryService  *QueryService
-	cacheService  *CacheService
+	echo         *echo.Echo
+	queryService *QueryService
+	cacheService *CacheService
 }
 
 func NewServer(dbConfig DBConfig, redisConfig RedisConfig) (*Server, error) {
@@ -44,9 +44,9 @@ func NewServer(dbConfig DBConfig, redisConfig RedisConfig) (*Server, error) {
 	}
 
 	s := &Server{
-		echo:          e,
-		queryService:  queryService,
-		cacheService:  cacheService,
+		echo:         e,
+		queryService: queryService,
+		cacheService: cacheService,
 	}
 
 	s.registerRoutes()
@@ -74,14 +74,14 @@ func (s *Server) Close() {
 }
 
 func WaitForDB(config DBConfig) error {
-	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s dbname=%s sslmode=disable",
-		config.Host, config.Port, config.User, config.Password, config.Name)
+	dsn := fmt.Sprintf("postgres://%s:%s@%s:%s/%s?sslmode=disable",
+		config.User, config.Password, config.Host, config.Port, config.Name)
 
-	var db *sql.DB
+	var db *sqlx.DB
 	var err error
 
 	for i := 0; i < 30; i++ {
-		db, err = sql.Open("postgres", dsn)
+		db, err = sqlx.Open("postgres", dsn)
 		if err == nil {
 			err = db.Ping()
 			if err == nil {

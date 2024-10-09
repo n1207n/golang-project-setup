@@ -2,7 +2,7 @@ package main
 
 import (
 	_ "github.com/lib/pq"
-	app "github.com/n1207n/golang-project-scaffold/internal/app"
+	"github.com/n1207n/golang-project-scaffold/internal/app"
 	"log"
 	"os"
 )
